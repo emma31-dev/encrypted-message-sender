@@ -1,7 +1,31 @@
 [package]
 name = "encrypted-message-sender"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 repository = "https://github.com/emma31-dev/encrypted-message-sender"
 
 [dependencies]
+serde = { version = "1.0", features = ["derive"] }
+dotenvy = "0.15"
+anyhow = "1.0"
+sqlx = { version = "0.8", features = ["runtime-tokio-native-tls", "sqlite", "uuid", "chrono", "migrate"] }
+tokio = { version = "1.0", features = ["full"] }
+aes-gcm = "0.10"
+axum = "0.6"
+serde_json = "1.0"
+uuid = { version = "1.23.1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+jsonwebtoken = { version = "10.4.0", features = ["aws_lc_rs"] }
+
+[lib]
+name = "ems"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ems"
+path = "src/main.rs"
+
+[profile.dev]
+opt-level = 0
+incremental = true
+debug = true
