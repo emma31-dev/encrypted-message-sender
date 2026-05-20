@@ -1,18 +1,17 @@
-use axum::extract::Path;
+mod signup;
 
-use axum::{Router, http::StatusCode, routing::get};
+use super::routes::signup::signup;
+use axum::{http::StatusCode, routing::get, Router};
+use sqlx::SqlitePool;
 
 // our router
-pub fn app() -> Router {
+pub fn app(pool: SqlitePool) -> Router {
     Router::new()
         .route("/healthz", get(health_check))
-        .route("/test/:id", get(get_user))
+        .route("/signup", get(signup))
+        .with_state(pool)
 }
 
 async fn health_check() -> (StatusCode, &'static str) {
     (StatusCode::OK, "ok")
-}
-
-async fn get_user(Path(id): Path<String>) -> String {
-    format!("User ID: {id}")
 }
