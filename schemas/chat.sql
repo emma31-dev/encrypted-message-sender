@@ -1,37 +1,40 @@
--- Parent Chat table
-CREATE TABLE chats (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPZT DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMPTZ
+-- Users table
+CREATE TABLE users (
+    id TEXT PRIMARY KEY,                     -- UUID stored as string, generated in Rust
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    date_joined TEXT NOT NULL DEFAULT (datetime('now')),
+    public_key TEXT NOT NULL,
+    deleted_at TEXT
 );
 
+-- Chats table
+CREATE TABLE chats (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at TEXT
+);
+
+-- Chat participants (many-to-many)
 CREATE TABLE chat_participants (
-    chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    joined_at TIMESTAMPTZ DEFAULT now(),
-    deleted_at TIMESTAMPTZ,
+    chat_id TEXT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (chat_id, user_id)
 );
 
--- Child Message table
+-- Messages table (with encryption support)
 CREATE TABLE messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
-    sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    content TEXT NOT NULL,
-    created_at TIMESTAMPZT DEFAULT CURRENT_TIMESTAMP,
+    id TEXT PRIMARY KEY,                     -- UUID generated in Rust
+    chat_id TEXT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+    sender_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    encrypted_content BLOB NOT NULL,         -- AES-GCM ciphertext (without tag)
+    nonce BLOB NOT NULL,                     -- 12 bytes unique per message
+    tag BLOB NOT NULL,                       -- 16 bytes authentication tag
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- User table
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    date_joined TIMESTAMPTZ DEFAULT now(),
-    public_key TEXT,               -- for future E2EE
-    deleted_at TIMESTAMPTZ
-)
-
+-- Indexes
 CREATE INDEX idx_messages_chat_id ON messages(chat_id);
 CREATE INDEX idx_messages_sender_id ON messages(sender_id);
 CREATE INDEX idx_messages_created_at ON messages(created_at);

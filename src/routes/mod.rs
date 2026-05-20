@@ -1,3 +1,4 @@
+mod helper;
 mod signup;
 
 use super::routes::signup::signup;
