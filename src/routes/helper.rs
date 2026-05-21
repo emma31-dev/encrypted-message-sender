@@ -1,8 +1,8 @@
+use crate::config::Config;
 use axum::http::StatusCode;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
-use std::env;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -19,12 +19,8 @@ pub fn create_jwt(user_id: &str) -> Result<String, (StatusCode, String)> {
         sub: user_id.to_string(),
         exp: expiration,
     };
-    let secret = env::var("JWT_SECRET").map_err(|_| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "JWT secret missing".to_string(),
-        )
-    })?;
+    let config = Config::from_env();
+    let secret = config.jwt_secret;
     encode(
         &Header::default(),
         &claims,

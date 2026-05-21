@@ -1,6 +1,8 @@
 mod helper;
 mod signup;
+mod login;
 
+use super::routes::login::login;
 use super::routes::signup::signup;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -13,7 +15,8 @@ pub fn app(pool: SqlitePool) -> Router {
     Router::new()
         .route("/healthz", get(health_check))
         .route("/is_ready", get(readiness_check))
-        .route("/signup", post(signup))
+        .route("/auth/signup", post(signup))
+        .route("/auth/login", post(login))
         .with_state(pool)
 }
 

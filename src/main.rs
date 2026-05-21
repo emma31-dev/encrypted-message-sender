@@ -3,10 +3,14 @@ use axum::Server;
 use ems::config::Config;
 use ems::db;
 use ems::routes::app;
+use ems::tracing;
 use std::net::SocketAddr;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Tracing initiallization
+    tracing::init_tracing();
+
     let config = Config::from_env();
     let pool = db::create_pool(&config.database_url)
         .await

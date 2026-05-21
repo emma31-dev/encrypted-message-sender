@@ -3,10 +3,11 @@ use anyhow::Result;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
-use bcrypt;
+use bcrypt::{hash, DEFAULT_COST};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
 #[derive(Deserialize)]
@@ -17,25 +18,26 @@ pub struct SignupRequest {
 
 #[derive(Serialize)]
 pub struct AuthResponse {
-    token: String,
-    user_id: String,
+    pub token: String,
+    pub user_id: String,
 }
 
 pub async fn signup(
     State(pool): State<SqlitePool>,
     Json(payload): Json<SignupRequest>,
 ) -> Result<Json<AuthResponse>, (StatusCode, String)> {
-    // Validate input
+    info!("Signup attempt detected");
+
     if payload.username.is_empty() || payload.password.is_empty() {
+        warn!("Empty payload received for signup");
         return Err((StatusCode::BAD_REQUEST, "Missing fields".to_string()));
     }
 
-    let hashed = bcrypt::hash(payload.password, bcrypt::DEFAULT_COST)
+    let hashed = hash(payload.password, DEFAULT_COST)
         .expect("Failed to hash password");
     let user_id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
 
-    // 4. Insert into database
     let result = sqlx::query(
         "INSERT INTO users (id, username, password_hash, date_joined) VALUES (?1, ?2, ?3, ?4)",
     )
@@ -48,13 +50,18 @@ pub async fn signup(
 
     match result {
         Ok(_) => {
+            info!("Created user successfully. ID: {}", user_id);
             // 5. Generate JWT
             let token = create_jwt(&user_id)?; // implement this helper
             Ok(Json(AuthResponse { token, user_id }))
         }
         Err(sqlx::Error::Database(ref e)) if e.is_unique_violation() => {
+            error!("Creating user failed. Username already exist.");
             Err((StatusCode::CONFLICT, "Username already taken".to_string()))
         }
-        Err(_) => Err((StatusCode::INTERNAL_SERVER_ERROR, "DB error".to_string())),
+        Err(_) => {
+            error!("Creating user failed. Failed to load database.");
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "DB error".to_string()))
+        }
     }
 }
