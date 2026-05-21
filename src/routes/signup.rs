@@ -54,7 +54,7 @@ pub async fn signup(
     .bind(&hashed)
     .bind(&now)
     .execute(&pool)
-    .await?;
+    .await;
 
     match result {
         Ok(_) => {
