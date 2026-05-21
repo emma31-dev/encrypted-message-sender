@@ -4,6 +4,7 @@ CREATE TABLE users (
     id TEXT PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    nonce BLOB NOT NULL,
     public_key TEXT,                  -- for future E2EE
     date_joined TEXT NOT NULL DEFAULT (datetime('now')),
     deleted_at TEXT                   -- soft delete

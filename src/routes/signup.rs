@@ -1,11 +1,9 @@
 use super::helper::*;
-use aes_gcm::{
-    aead::{Aead, AeadCore, KeyInit, OsRng},
-    Aes256Gcm,
-};
+use anyhow::Result;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
+use bcrypt;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
@@ -15,12 +13,11 @@ use uuid::Uuid;
 pub struct SignupRequest {
     username: String,
     password: String,
-    // optional public_key for future E2EE
 }
 
 #[derive(Serialize)]
 pub struct AuthResponse {
-    token: String, // JWT
+    token: String,
     user_id: String,
 }
 
@@ -28,20 +25,13 @@ pub async fn signup(
     State(pool): State<SqlitePool>,
     Json(payload): Json<SignupRequest>,
 ) -> Result<Json<AuthResponse>, (StatusCode, String)> {
-    // 1. Validate input (username not empty, password strength, etc.)
+    // Validate input
     if payload.username.is_empty() || payload.password.is_empty() {
         return Err((StatusCode::BAD_REQUEST, "Missing fields".to_string()));
     }
 
-    let key = Aes256Gcm::generate_key(OsRng);
-    let cipher = Aes256Gcm::new(&key);
-    let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
-    // 2. Hash password
-    let hashed = cipher
-        .encrypt(&nonce, payload.password.as_ref())
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Hash error".to_string()))?;
-
-    // 3. Generate user ID
+    let hashed = bcrypt::hash(payload.password, bcrypt::DEFAULT_COST)
+        .expect("Failed to hash password");
     let user_id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
 
