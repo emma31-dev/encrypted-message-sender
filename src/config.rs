@@ -5,6 +5,7 @@ pub struct Config {
     pub database_url: String,
     pub jwt_secret: String,
     pub port: u16,
+    pub ip_address: String,
 }
 
 impl Config {
@@ -17,6 +18,7 @@ impl Config {
                 .unwrap_or_else(|_| "8080".to_string())
                 .parse()
                 .expect("PORT must be a number"),
+            ip_address: env::var("IP_ADDRESS").expect("Ip address not set")
         }
     }
 }
