@@ -1,6 +1,6 @@
 mod helper;
-mod signup;
 mod login;
+mod signup;
 
 use super::routes::login::login;
 use super::routes::signup::signup;
