@@ -3,22 +3,25 @@ use std::env;
 
 pub struct Config {
     pub database_url: String,
+    pub ip_address: String,
     pub jwt_secret: String,
     pub port: u16,
-    pub ip_address: String,
 }
 
 impl Config {
     pub fn from_env() -> Self {
-        dotenv().ok();
+        dotenv().expect("Failed to load .env variables");
         Self {
             database_url: env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
             jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET must be set"),
-            port: env::var("PORT")
-                .unwrap_or_else(|_| "8080".to_string())
+            ip_address: env::var("IP_ADDRESS")
+                .unwrap_or("127.0.0.1".to_string())
                 .parse()
-                .expect("PORT must be a number"),
-            ip_address: env::var("IP_ADDRESS").expect("Ip address not set")
+                .expect("Ip address not set"),
+            port: env::var("PORT")
+                .unwrap_or("8080".to_string())
+                .parse()
+                .expect("PORT not set"),
         }
     }
 }

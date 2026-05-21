@@ -8,14 +8,18 @@ use std::net::SocketAddr;
 #[tokio::main]
 async fn main() -> Result<()> {
     let config = Config::from_env();
-    // Create connection pool
-    let pool = db::create_pool(&config.database_url).await?;
-    // Run migrations (creates tables if not present)
-    db::run_migrations(&pool).await?;
+    let pool = db::create_pool(&config.database_url)
+        .await
+        .context("Failed to create pool")?;
+
+    // Run migrations
+    db::run_migrations(&pool)
+        .await
+        .context("Failed to run migrations")?;
 
     let socket = format!("{}:{}", config.ip_address, config.port)
         .parse()
-        .expect("Failed to open socket");
+        .context("Failed to open socket")?;
 
     println!("server running on {:?}", &socket);
     Server::bind(&socket)

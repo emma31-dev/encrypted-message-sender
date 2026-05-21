@@ -47,7 +47,7 @@ pub async fn signup(
 
     // 4. Insert into database
     let result = sqlx::query(
-        "INSERT INTO users (id, username, password_hash, date_joined) VALUES (?1, ?2, ?3, ?4)"
+        "INSERT INTO users (id, username, password_hash, date_joined) VALUES (?1, ?2, ?3, ?4)",
     )
     .bind(&user_id)
     .bind(&payload.username)

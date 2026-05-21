@@ -1,8 +1,8 @@
 use axum::http::StatusCode;
+use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use std::env;
-use chrono::{Utc, Duration};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
