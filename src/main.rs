@@ -3,6 +3,7 @@ use axum::Server;
 use ems::config::Config;
 use ems::db;
 use ems::routes::app;
+use std::net::SocketAddr;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -12,13 +13,13 @@ async fn main() -> Result<()> {
     // Run migrations (creates tables if not present)
     db::run_migrations(&pool).await?;
 
-    let address = format!("0.0.0.0:{}", config.port)
+    let socket = format!("{}:{}", config.ip_address, config.port)
         .parse()
         .expect("Failed to open socket");
 
-    println!("server running on {:?}", &address);
-    Server::bind(&address)
-        .serve(app(pool).into_make_service())
+    println!("server running on {:?}", &socket);
+    Server::bind(&socket)
+        .serve(app(pool).into_make_service_with_connect_info::<SocketAddr>())
         .await
         .context("Failed to start server.")
 }
