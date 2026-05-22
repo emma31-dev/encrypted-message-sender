@@ -1,26 +1,14 @@
-use super::helper::*;
+use super::helper::create_jwt;
+use super::structures::{AuthResponse, SignupRequest};
 use anyhow::Result;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use bcrypt::{hash, DEFAULT_COST};
 use chrono::Utc;
-use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use tracing::{debug, error};
 use uuid::Uuid;
-
-#[derive(Deserialize)]
-pub struct SignupRequest {
-    username: String,
-    password: String,
-}
-
-#[derive(Serialize)]
-pub struct AuthResponse {
-    pub token: String,
-    pub user_id: String,
-}
 
 pub async fn signup(
     State(pool): State<SqlitePool>,
@@ -33,7 +21,9 @@ pub async fn signup(
         return Err((StatusCode::BAD_REQUEST, "Missing fields".to_string()));
     }
 
-    let hashed = hash(payload.password, DEFAULT_COST).expect("Failed to hash password");
+    let hashed = hash(payload.password, DEFAULT_COST)
+        .map_err(|e| error!(error = ?e, "Failed to hash user password"))
+        .expect("Failed to hash user password");
     let user_id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
 

@@ -1,10 +1,8 @@
 use anyhow::{Context, Result};
-use axum::Server;
 use ems::config::Config;
 use ems::db;
 use ems::routes::app;
 use ems::tracing::init_tracing;
-use std::net::SocketAddr;
 use tracing::info;
 
 #[tokio::main]
@@ -22,13 +20,11 @@ async fn main() -> Result<()> {
         .await
         .context("Failed to run migrations")?;
 
-    let socket = format!("{}:{}", config.ip_address, config.port)
-        .parse()
-        .context("Failed to open socket")?;
+    let socket = format!("{}:{}", config.ip_address, config.port);
 
     info!("server running on {:?}", &socket);
-    Server::bind(&socket)
-        .serve(app(pool).into_make_service_with_connect_info::<SocketAddr>())
+    let listener = tokio::net::TcpListener::bind(socket).await.unwrap();
+    axum::serve(listener, app(pool))
         .await
         .context("Failed to start server.")
 }

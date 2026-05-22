@@ -1,18 +1,11 @@
 use super::helper::create_jwt;
-use super::signup::AuthResponse;
+use super::structures::{AuthResponse, LoginRequest};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use bcrypt::verify;
-use serde::Deserialize;
 use sqlx::SqlitePool;
-use tracing::{debug, error, warn};
-
-#[derive(Deserialize)]
-pub struct LoginRequest {
-    username: String,
-    password: String,
-}
+use tracing::{debug, error, info, warn};
 
 pub async fn login(
     State(pool): State<SqlitePool>,
@@ -71,7 +64,7 @@ pub async fn login(
 
     // 4. Generate and return JWT
     let token = create_jwt(&user_id)?;
-    debug!(
+    info!(
         user_id = user_id,
         "Authentication response returned to user"
     );

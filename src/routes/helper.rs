@@ -1,14 +1,8 @@
+use super::structures::Claims;
 use crate::config::Config;
 use axum::http::StatusCode;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Claims {
-    sub: String, // user_id
-    exp: usize,  // expiration
-}
 
 pub fn create_jwt(user_id: &str) -> Result<String, (StatusCode, String)> {
     let expiration = Utc::now()
