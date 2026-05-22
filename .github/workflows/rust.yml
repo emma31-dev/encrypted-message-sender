@@ -48,6 +48,20 @@ jobs:
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
 
+      - name: Create .env file
+        run: |
+          cat << EOF > .env
+          DATABASE_URL=$DATABASE_URL
+          IP_ADDRESS=$IP_ADDRESS
+          JWT_SECRET=$JWT_SECRET
+          PORT=$PORT
+          EOF
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          IP_ADDRESS: ${{ env.IP_ADDRESS }}
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+          PORT: ${{ env.PORT }}
+
       - name: Build
         run: cargo build --release
 
