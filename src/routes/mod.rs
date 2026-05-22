@@ -19,9 +19,9 @@ pub fn app(pool: SqlitePool) -> Router {
     let governor_config = Arc::new(
         GovernorConfigBuilder::default()
             .per_second(1)
-            .burst_size(5)
+            .burst_size(500)
             .finish()
-            .unwrap(),
+            .expect("Failed to build governor config"),
     );
     let rate_limiter = GovernorLayer::new(governor_config);
     let cors = CorsLayer::new()

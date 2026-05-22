@@ -8,15 +8,90 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  DATABASE_URL: sqlite:./chat.db?mode=rwc
+  RUST_LOG: info
 
 jobs:
-  build:
-
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Formatting
-      run: cargo fmt
-    - name: Checking
-      run: cargo check
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install sqlx-cli (for migrations)
+        run: cargo install sqlx-cli --no-default-features --features sqlite
+
+      - name: Create mock database and run migrations
+        run: |
+          # Remove old db if exists
+          rm -f chat.db
+          # Run migrations (assumes you have a `migrations/` folder with .sql files)
+          sqlx migrate run
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Build backend
+        run: cargo build --release
+
+      - name: Start backend server in background
+        run: |
+          cargo run --release &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          # Give it a few seconds to start
+          sleep 3
+
+      - name: Wait for server to be ready
+        run: |
+          for i in {1..10}; do
+            if curl -s -f http://localhost:3000/healthz; then
+              echo "Server is ready"
+              exit 0
+            fi
+            echo "Waiting for server... (attempt $i)"
+            sleep 2
+          done
+          echo "Server failed to start within timeout"
+          exit 1
+
+      - name: Test health endpoint (expected 200 OK)
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/healthz)
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Health check failed with status $STATUS"
+            exit 1
+          fi
+          echo "Health check passed"
+
+      - name: Test readiness endpoint (if you have one)
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/ready)
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Readiness check failed with status $STATUS"
+            exit 1
+          fi
+          echo "Readiness check passed"
+
+      - name: Stop server
+        if: always()
+        run: kill ${{ env.SERVER_PID }} || true
+
+      - name: Run cargo test (optional)
+        run: cargo test

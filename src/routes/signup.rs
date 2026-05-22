@@ -22,7 +22,7 @@ pub async fn signup(
     }
 
     let hashed = hash(payload.password, DEFAULT_COST)
-        .map_err(|e| error!(error = ?e, "Failed to hash user password"))
+        .map_err(|e| error!(?e))
         .expect("Failed to hash user password");
     let user_id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
@@ -39,14 +39,14 @@ pub async fn signup(
 
     match result {
         Ok(_) => {
-            debug!(user_id = user_id, "Created user successfully");
-            // 5. Generate JWT
-            let token = create_jwt(&user_id)?; // implement this helper
+            debug!(user_id, "Created user successfully");
+            
+            let token = create_jwt(&user_id)?;
             Ok(Json(AuthResponse { token, user_id }))
         }
         Err(sqlx::Error::Database(ref e)) if e.is_unique_violation() => {
             debug!(
-                username = payload.username,
+                payload.username,
                 "Creating user failed. Username already exist"
             );
             Err((StatusCode::CONFLICT, "Username already taken".to_string()))
