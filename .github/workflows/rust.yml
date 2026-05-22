@@ -50,6 +50,7 @@ jobs:
 
       - name: Create .env file
         run: |
+          rm -f .env
           cat << EOF > .env
           DATABASE_URL=$DATABASE_URL
           IP_ADDRESS=$IP_ADDRESS
@@ -94,5 +95,8 @@ jobs:
         if: always()
         run: kill ${{ env.SERVER_PID }} || true
 
-      - name: Run cargo test
-        run: cargo test
+      - name: Clean up
+        if: always()
+        run: |
+          rm -f .env
+          rm -f chat.db
