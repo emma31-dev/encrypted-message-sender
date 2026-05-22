@@ -9,5 +9,5 @@ pub async fn create_pool(database_url: &str) -> Result<SqlitePool, sqlx::Error> 
 }
 
 pub async fn run_migrations(pool: &SqlitePool) -> Result<(), sqlx::migrate::MigrateError> {
-    sqlx::migrate!("./schemas/").run(pool).await
+    sqlx::migrate!("./migrations").run(pool).await
 }

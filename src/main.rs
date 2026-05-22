@@ -3,21 +3,30 @@ use axum::Server;
 use ems::config::Config;
 use ems::db;
 use ems::routes::app;
+use ems::tracing::init_tracing;
 use std::net::SocketAddr;
+use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Tracing initiallization
+    let _guard = init_tracing();
+
     let config = Config::from_env();
-    // Create connection pool
-    let pool = db::create_pool(&config.database_url).await?;
-    // Run migrations (creates tables if not present)
-    db::run_migrations(&pool).await?;
+    let pool = db::create_pool(&config.database_url)
+        .await
+        .context("Failed to create pool")?;
+
+    // Run migrations
+    db::run_migrations(&pool)
+        .await
+        .context("Failed to run migrations")?;
 
     let socket = format!("{}:{}", config.ip_address, config.port)
         .parse()
-        .expect("Failed to open socket");
+        .context("Failed to open socket")?;
 
-    println!("server running on {:?}", &socket);
+    info!("server running on {:?}", &socket);
     Server::bind(&socket)
         .serve(app(pool).into_make_service_with_connect_info::<SocketAddr>())
         .await
