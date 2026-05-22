@@ -40,7 +40,7 @@ pub async fn signup(
     match result {
         Ok(_) => {
             debug!(user_id, "Created user successfully");
-            
+
             let token = create_jwt(&user_id)?;
             Ok(Json(AuthResponse { token, user_id }))
         }

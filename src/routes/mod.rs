@@ -10,20 +10,20 @@ use axum::http::StatusCode;
 use axum::routing::post;
 use axum::{routing::get, Router};
 use sqlx::SqlitePool;
-use std::sync::Arc;
-use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
+// use std::sync::Arc;
+// use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::cors::{Any, CorsLayer};
 
 // our router
 pub fn app(pool: SqlitePool) -> Router {
-    let governor_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .per_second(1)
-            .burst_size(500)
-            .finish()
-            .expect("Failed to build governor config"),
-    );
-    let rate_limiter = GovernorLayer::new(governor_config);
+    // let governor_config = Arc::new(
+    //     GovernorConfigBuilder::default()
+    //         .per_second(1)
+    //         .burst_size(500)
+    //         .finish()
+    //         .expect("Failed to build governor config"),
+    // );
+    // let rate_limiter = GovernorLayer::new(governor_config);
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
@@ -36,7 +36,7 @@ pub fn app(pool: SqlitePool) -> Router {
         .route("/auth/login", post(login))
         .with_state(pool)
         .layer(cors)
-        .layer(rate_limiter)
+    // .layer(rate_limiter)
 }
 
 async fn health_check() -> (StatusCode, &'static str) {
