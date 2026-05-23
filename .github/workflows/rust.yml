@@ -95,6 +95,8 @@ jobs:
       - name: Stop server
         if: always()
         run: kill ${{ env.SERVER_PID }} || true
+      - name: Testing
+        run: cargo test
 
       - name: Clean up
         if: always()

@@ -57,3 +57,49 @@ pub async fn signup(
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::routes::structures::{SignupRequest};
+    use crate::db;
+    use crate::config::Config;
+    use sqlx::SqlitePool;
+    use anyhow::{Context,Result};
+    use axum::{Json, extract::State};
+    use super::signup;
+
+    #[tokio::test]
+    #[ignore = "only runs locally (use `cargo test -- --ignored` to run this test)"]
+    async fn test_signup() -> Result<()> {
+        let payload = SignupRequest { 
+            username: "test_user_1".to_string(), 
+            password: "secret123".to_string()
+        };
+        let config = Config::from_env();
+        let pool = db::create_pool(&config.database_url)
+            .await
+            .context("Failed to create pool")?;
+        db::run_migrations(&pool)
+            .await
+            .context("Failed to run migrations")?;
+
+        let response = signup(State(pool), Json(payload)).await;
+        assert!(!response.is_ok());
+        Ok(())
+    }
+    
+    #[tokio::test]
+    async fn test_signup_of_existing_account() -> Result<()> {
+        let payload = SignupRequest { 
+            username: "test_user_1".to_string(), 
+            password: "secret123".to_string()
+        };
+        
+        let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
+        sqlx::migrate!().run(&pool).await.unwrap();
+
+        let response = signup(State(pool), Json(payload)).await;
+        assert!(response.is_ok());
+        Ok(())
+    }
+}

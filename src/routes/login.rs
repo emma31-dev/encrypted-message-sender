@@ -70,3 +70,29 @@ pub async fn login(
     );
     Ok(Json(AuthResponse { token, user_id }))
 }
+
+#[cfg(test)]
+mod test {
+    use crate::routes::structures::LoginRequest;
+    use crate::db;
+    use crate::config::Config;
+    use anyhow::{Context, Result};
+    use axum::{Json, extract::State};
+    use super::login;
+
+    #[tokio::test]
+    async fn test_login() -> Result<()> {
+        let payload = LoginRequest { 
+            username: "test_user_1".to_string(), 
+            password: "secret123".to_string()
+        };
+        let config = Config::from_env();
+        let pool = db::create_pool(&config.database_url)
+            .await
+            .context("Failed to create pool")?;
+
+        let response = login(State(pool), Json(payload)).await;
+        assert!(response.is_ok());
+        Ok(())
+    }
+}
