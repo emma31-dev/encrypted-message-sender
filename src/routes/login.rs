@@ -23,11 +23,8 @@ pub async fn login(
     )
     .fetch_optional(&pool)
     .await
-    .map_err(|e| {
-        error!(
-            error = ?e,
-            "DB failed to initialize"
-        );
+    .map_err(|error| {
+        error!(?error, "DB failed to initialize");
         (StatusCode::INTERNAL_SERVER_ERROR, "DB error".to_string())
     })?;
 
@@ -43,20 +40,20 @@ pub async fn login(
     };
 
     let user_id = id.unwrap_or_default();
-    debug!(user_id = user_id, "Record found for login of User");
+    debug!(user_id, "Record found for login of User");
 
     // 3. Verify password
-    let is_valid = verify(&payload.password, &stored_hash).map_err(|_| {
+    let is_valid = verify(&payload.password, &stored_hash).map_err(|error| {
         warn!(
-            user_id = user_id,
-            "Failed to verify password for login attempt of user"
+            ?error,
+            user_id, "Failed to verify password for login attempt of user"
         );
         (StatusCode::INTERNAL_SERVER_ERROR, "Hash error".to_string())
     })?;
 
     if !is_valid {
         warn!(
-            user_id = user_id,
+            user_id,
             "Invalid credentials provided for login attempt of user"
         );
         return Err((StatusCode::UNAUTHORIZED, "Invalid credentials".to_string()));
@@ -73,32 +70,32 @@ pub async fn login(
 
 #[cfg(test)]
 mod test {
-    use crate::routes::structures::{LoginRequest, SignupRequest};
-    use crate::db;
-    use crate::config::Config;
-    use anyhow::{Context, Result};
-    use axum::{Json, extract::State};
     use super::login;
+    use crate::config::Config;
+    use crate::db;
     use crate::routes::signup::signup;
+    use crate::routes::structures::{LoginRequest, SignupRequest};
+    use anyhow::{Context, Result};
+    use axum::{extract::State, Json};
 
     #[tokio::test]
     async fn test_login() -> Result<()> {
-        let payload1 = LoginRequest { 
-            username: "test_user_1".to_string(), 
-            password: "secret123".to_string()
+        let payload1 = LoginRequest {
+            username: "test_user_1".to_string(),
+            password: "secret123".to_string(),
         };
 
-        let payload2 = SignupRequest { 
-            username: "test_user_1".to_string(), 
-            password: "secret123".to_string()
+        let payload2 = SignupRequest {
+            username: "test_user_1".to_string(),
+            password: "secret123".to_string(),
         };
-        
+
         let config = Config::from_env();
         let pool = db::create_pool(&config.database_url)
             .await
             .context("Failed to create pool")?;
 
-        let _ = signup(State(pool.clone()), Json(payload2)).await;
+        let _response = signup(State(pool.clone()), Json(payload2)).await;
         let response = login(State(pool), Json(payload1)).await;
         assert!(response.is_ok());
         Ok(())

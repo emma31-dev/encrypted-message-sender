@@ -1,7 +1,7 @@
-use tracing_appender::non_blocking::WorkerGuard;
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
-use tracing_appender::rolling;
 use std::io::stdout;
+use tracing_appender::non_blocking::WorkerGuard;
+use tracing_appender::rolling;
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 pub fn init_tracing() -> WorkerGuard {
     // Create a rolling file appender – rotates daily
