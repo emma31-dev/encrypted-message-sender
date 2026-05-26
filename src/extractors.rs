@@ -3,7 +3,6 @@ use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum::http::StatusCode;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
-use tracing::debug;
 
 pub struct AuthenticatedUser(pub String);
 
@@ -19,15 +18,13 @@ where
             .headers
             .get("authorization")
             .ok_or_else(|| {
-                debug!("Missing authorization header");
                 (
                     StatusCode::UNAUTHORIZED,
                     "Missing authorization header".to_string(),
                 )
             })?
             .to_str()
-            .map_err(|e| {
-                debug!(?e, "Invalid header");
+            .map_err(|_| {
                 (StatusCode::UNAUTHORIZED, "Invalid header".to_string())
             })?;
 
@@ -47,10 +44,10 @@ where
         let user_id = token_data
             .claims
             .get("sub")
-            .and_then(|v| v.as_str())
+            .map(|v| v.to_string())
             .ok_or((StatusCode::UNAUTHORIZED, "Missing user_id".to_string()))?;
 
-        Ok(AuthenticatedUser(user_id.to_string()))
+        Ok(AuthenticatedUser(user_id))
     }
 }
 
